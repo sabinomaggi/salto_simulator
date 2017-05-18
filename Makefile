@@ -1,84 +1,163 @@
-# Set to 1 to enable debugging (slow, lots of output)
-DEBUG	= 0
-# Set to 1 to silence building
-SILENT	= 1
+# Enable debugging (slow, lots of output)
+DEBUG = yes
+# Silence building
+SILENT = yes
+# Show warnings
+WARN  = yes
+# Optimize binary
+OPTIM = no
 
-# CROM/CRAM config
+
+# CROM/CRAM configuration
 # 1 = 1K CROM, 1K CRAM, 1 set of S registers
 # 2 = 2K CROM, 1K CRAM, 1 set of S registers
 # 3 = 1K CROM, 3K CRAM, 8 sets of S registers
-CRAM	= 1
+CRAM = 1
 
-# project name and version number
-PROJECT		=	salto
-VER_MAJOR	=	0
-VER_MINOR	=	4
-VER_MICRO	=	2
-VERSION		=	$(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)
+# Project name and version number
+PROJECT   = salto
+VER_MAJOR = 0
+VER_MINOR = 4
+VER_MICRO = 2
+VERSION   = $(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)
 
-# relative path names
-SRC	=	src
-OBJ	=	obj
-BIN	=	bin
-TEMP	=	temp
-ZLIB	=	zlib
-TOOLS	=	tools
-DIRS	=	$(BIN) $(OBJ) $(TEMP)
+# Relative path names
+SRC   = src
+OBJ   = obj
+BIN   = bin
+TEMP  = temp
+ZLIB  = zlib
+TOOLS = tools
+DIRS  = $(BIN) $(OBJ) $(TEMP)
+
+# Check platform (Darwin, Linux or Windows) and architecture (32/64 bit)
+PLATFORM := $(shell uname)
+ARCH     := $(shell uname -m)
+OSXMIN = 10.8
+
+# Manually choose this platform for cross-compilation of Windows executable under Linux
+### PLATFORM = MINGW
+
+# Set GCC compiler according to platform
+ifeq ($(PLATFORM), Darwin)
+	export GCC = $(shell which gcc)
+endif
+ifeq ($(PLATFORM), Linux)
+	export GCC = $(shell which gcc)
+endif
+ifeq ($(PLATFORM), MINGW)
+	export GCC = i686-w64-mingw32-gcc
+endif
+ifeq ($(findstring NT-5.1,$(PLATFORM)), NT-5.1)
+	export GCC = $(shell which gcc)
+endif
+### ifeq ($(PLATFORM), ADD_YOUR_PLATFORM_HERE)
+### 	export GCC = ADD_YOUR_COMPILER_HERE
+### endif
+
+# Set optimization/debug flags
+ifeq ($(DEBUG), yes)
+	CFLAGS += -g -O3 -DDEBUG=1
+	LDFLAGS += -g
+endif
+ifeq ($(OPTIM), yes)
+	CFLAGS += -MD
+	CFLAGS	+= -O3 -fno-strict-aliasing -DDEBUG=0
+endif
+ifeq ($(WARN), yes)
+	CFLAGS += -Wall -MD
+	CFLAGS	+= -O3 -fno-strict-aliasing -DDEBUG=0
+endif
+
 
 # C-cache, C compiler and flags
-GCC	= $(shell which gcc)
-CFLAGS	+= -Wall -MD
+# GCC    = $(shell which gcc)
+# CFLAGS    += -Wall -MD
 
 # Linker and flags
-LD	= $(GCC)
-LDFLAGS =
+LD = $(GCC)
+# LDFLAGS =
 
 # Archiver and flags
-AR	= ar
+AR = ar
 ARFLAGS = r
 # Archiver TOC updater
-RANLIB	= ranlib
+RANLIB = ranlib
 
 # Default libraries
-LIBS	=
+LIBS =
 # Default include paths
-INC	= -Iinclude -I$(TEMP)
+INC = -Iinclude -I$(TEMP)
 
 # Lex and Yacc (required for the Alto assember aasm)
-LEX	= flex
-YACC	= yacc
-YFLAGS	= -d -t -v
+LEX    = flex
+YACC   = yacc
+YFLAGS = -d -t -v
 
 # Move command
-MV	= mv
+MV = mv
 
-# Include path (use to find zlib.h header file)
+# Define includes and libraries
+ifeq ($(PLATFORM), Darwin)
+	BREW := $(shell brew --prefix)
+	CFLAGS += -m64 -DMACOSX
+	LDFLAGS += -mmacosx-version-min=$(OSXMIN)
+	INCLUDES = -I$(BREW)/include -L$(BREW)/lib
+endif
+ifeq ($(PLATFORM), Linux)
+	ifeq ($(ARCH), x86_64)
+		LNXENV = 64
+	else
+		LNXENV = 32
+	endif
+	CFLAGS += -m$(LNXENV) -DLINUX
+	LDFLAGS += -m$(LNXENV) -static
+	INCLUDES = -I/usr/include -L/usr/lib
+endif
+ifeq ($(PLATFORM), MINGW)
+	CFLAGS += -m32 -DWINDOWS
+	LDFLAGS += -m32 -static
+	INCLUDES = -I/usr/include -L/usr/lib
+endif
+ifeq ($(findstring NT-5.1,$(PLATFORM)), NT-5.1)
+	CFLAGS += -m32 -DWINDOWS
+	LDFLAGS += -m32 -static
+	INCLUDES = -I/usr/include -L/usr/lib
+endif
+### ifeq ($(PLATFORM), ADD_YOUR_PLATFORM_HERE)
+### 	FCFLAGS += -m32 -DLINUX
+### 	LDFLAGS += -m32 -static
+### 	INCLUDES = -I/usr/include -L/usr/lib
+### endif
 
-# Specify the full path to a libz.so, if you know it, or
-# otherwise just comment the following line to build our own
+
+# # Include path (use to find zlib.h header file)
 #
-ifeq ($(wildcard /usr/local/include/zlib.h),/usr/local/include/zlib.h)
-INCZ	=	-I/usr/local/include
-LIBZ	=	-L/usr/local/lib -Wl,-rpath,/usr/local/lib -lz
-else
-ifeq ($(wildcard /usr/pkg/include/zlib.h),/usr/pkg/include/zlib.h)
-INCZ	=	-I/usr/pkg/include
-LIBZ	=	-L/usr/pkg/lib -Wl,-rpath,/usr/pkg/lib -lz
-else
-ifeq ($(wildcard /usr/include/zlib.h),/usr/include/zlib.h)
-INCZ	=	-I/usr/include
-ifeq ($(wildcard /usr/lib/libz.so),/usr/lib/libz.so)
-LIBZ	=	-L/usr/lib -Wl,-rpath,/usr/lib -lz
-else
-ifeq ($(wildcard /lib/libz.so),/lib/libz.so)
-LIBZ	=	-L/lib -Wl,-rpath,/lib -lz
-else
-LIBZ	=
-endif
-endif
-endif
-endif
-endif
+# # Specify the full path to a libz.so, if you know it, or
+# # otherwise just comment the following line to build our own
+# #
+# ifeq ($(wildcard /usr/local/include/zlib.h),/usr/local/include/zlib.h)
+# INCZ	=	-I/usr/local/include
+# LIBZ	=	-L/usr/local/lib -Wl,-rpath,/usr/local/lib -lz
+# else
+# ifeq ($(wildcard /usr/pkg/include/zlib.h),/usr/pkg/include/zlib.h)
+# INCZ	=	-I/usr/pkg/include
+# LIBZ	=	-L/usr/pkg/lib -Wl,-rpath,/usr/pkg/lib -lz
+# else
+# ifeq ($(wildcard /usr/include/zlib.h),/usr/include/zlib.h)
+# INCZ	=	-I/usr/include
+# ifeq ($(wildcard /usr/lib/libz.so),/usr/lib/libz.so)
+# LIBZ	=	-L/usr/lib -Wl,-rpath,/usr/lib -lz
+# else
+# ifeq ($(wildcard /lib/libz.so),/lib/libz.so)
+# LIBZ	=	-L/lib -Wl,-rpath,/lib -lz
+# else
+# LIBZ	=
+# endif
+# endif
+# endif
+# endif
+# endif
 
 #
 # If LIBZ is left empty, we will build our own in ./zlib
@@ -105,13 +184,6 @@ CFLAGS	+= -DFRONTEND_ICONS=1
 # CRAM configuration
 CFLAGS	+= -DCRAM_CONFIG=$(CRAM)
 
-# Add some flags depending on DEBUG=0 or 1
-ifeq	($(strip $(DEBUG)),1)
-CFLAGS	+= -g -O3 -DDEBUG=1
-else
-CFLAGS	+= -O3 -fno-strict-aliasing -DDEBUG=0
-LDFLAGS	+=
-endif
 
 ifeq	($(strip $(SILENT)),1)
 CC_MSG		=	@echo "==> compiling $< ..."
