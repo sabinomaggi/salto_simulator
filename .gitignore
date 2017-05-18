@@ -25,8 +25,8 @@ asm/helloworld.lst
 keyboard.conf
 temp/
 
-#--- ignore executables ---#
-*.exe
-bin/
+#--- (don't) ignore (some) executables ---#
+## *.exe
+## bin/
 *.out
 obj/
