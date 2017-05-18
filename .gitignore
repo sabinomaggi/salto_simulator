@@ -1,26 +1,32 @@
-# Object files
+#------------------------------------------------#
+# .gitignore file for Xerox Alto's               #
+#  salto simulator                               #
+#------------------------------------------------#
+# Author:        brainsqueezer                   #
+# Revision:      Sabino Maggi                    #
+# Last revision: 18-05-2017                      #
+#------------------------------------------------#
+
+
+#--- ignore object files ---#
 *.o
 
-# Libraries
-*.lib
-
-# Shared objects (inc. Windows DLLs)
+#--- ignore libraries and shared objects ---#
+#    (including Windows DLLs)
+.lib
 *.dll
 *.so
 
-# Executables
-*.exe
-*.out
-
-bin/
-obj/
-
-*.kate-swp
+#--- ignore backup and temporary files ---#
 *~
-
-# temporary files
+*.kate-swp
 alto.mng
 asm/helloworld.lst
 keyboard.conf
 temp/
 
+#--- ignore executables ---#
+*.exe
+bin/
+*.out
+obj/
