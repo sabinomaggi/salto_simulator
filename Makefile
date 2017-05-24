@@ -1,11 +1,12 @@
-# Enable debugging (slow, lots of output)
-DEBUG = yes
-# Silence building
+# Enable standard/heavy debugging (slow, lots of output)
+DEBUG  = no
+HDEBUG = no
+# Optimize binary
+OPTIM  = yes
+# Silence build
 SILENT = yes
 # Show warnings
-WARN  = yes
-# Optimize binary
-OPTIM = no
+WARN   = no
 
 
 # CROM/CRAM configuration
@@ -55,39 +56,39 @@ endif
 ### 	export GCC = ADD_YOUR_COMPILER_HERE
 ### endif
 
-# Set optimization/debug flags
-ifeq ($(DEBUG), yes)
-	CFLAGS += -g -O3 -DDEBUG=1
-	LDFLAGS += -g
-endif
+
+# Set optimization/warning/debug flags
 ifeq ($(OPTIM), yes)
-	CFLAGS += -MD
 	CFLAGS	+= -O3 -fno-strict-aliasing -DDEBUG=0
 endif
 ifeq ($(WARN), yes)
 	CFLAGS += -Wall -MD
 	CFLAGS	+= -O3 -fno-strict-aliasing -DDEBUG=0
 endif
+# standard debugging
+ifeq ($(DEBUG), yes)
+	CFLAGS += -g -O3 -DDEBUG=1		# why not -O0?
+	LDFLAGS += -g
+endif
+# heavy debugging (normally not needed)
+ifeq ($(HDEBUG), yes)
+	CFLAGS += -g -O3 -DDEBUG=1		# why not -O0?
+	CFLAGS += -DDEBUG_CPU_TIMESLICES=1
+	CFLAGS += -DDEBUG_DISPLAY_TIMING=1
+	LDFLAGS += -g
+endif
 
-
-# C-cache, C compiler and flags
-# GCC    = $(shell which gcc)
-# CFLAGS    += -Wall -MD
 
 # Linker and flags
 LD = $(GCC)
-# LDFLAGS =
+# LDFLAGS +=
 
 # Archiver and flags
 AR = ar
 ARFLAGS = r
+
 # Archiver TOC updater
 RANLIB = ranlib
-
-# Default libraries
-LIBS =
-# Default include paths
-INC = -Iinclude -I$(TEMP)
 
 # Lex and Yacc (required for the Alto assember aasm)
 LEX    = flex
@@ -97,10 +98,18 @@ YFLAGS = -d -t -v
 # Move command
 MV = mv
 
-# Define includes and libraries
+
+# Default libraries
+## LIBS +=
+# Include paths in source directory
+INC = -I./include -I./$(TEMP)
+
+
+# Define platform/dependent includes and libraries
 ifeq ($(PLATFORM), Darwin)
 	BREW := $(shell brew --prefix)
 	CFLAGS += -m64 -DMACOSX
+	CFLAGS += -DHAVE_STDINT_H=1
 	LDFLAGS += -mmacosx-version-min=$(OSXMIN)
 	INCLUDES = -I$(BREW)/include -L$(BREW)/lib
 endif
@@ -111,16 +120,19 @@ ifeq ($(PLATFORM), Linux)
 		LNXENV = 32
 	endif
 	CFLAGS += -m$(LNXENV) -DLINUX
+	CFLAGS += -DHAVE_STDINT_H=1
 	LDFLAGS += -m$(LNXENV) -static
 	INCLUDES = -I/usr/include -L/usr/lib
 endif
 ifeq ($(PLATFORM), MINGW)
 	CFLAGS += -m32 -DWINDOWS
+	CFLAGS += -DHAVE_STDINT_H=1		# check!
 	LDFLAGS += -m32 -static
 	INCLUDES = -I/usr/include -L/usr/lib
 endif
 ifeq ($(findstring NT-5.1,$(PLATFORM)), NT-5.1)
 	CFLAGS += -m32 -DWINDOWS
+	CFLAGS += -DHAVE_STDINT_H=1		# check!
 	LDFLAGS += -m32 -static
 	INCLUDES = -I/usr/include -L/usr/lib
 endif
@@ -129,6 +141,12 @@ endif
 ### 	LDFLAGS += -m32 -static
 ### 	INCLUDES = -I/usr/include -L/usr/lib
 ### endif
+
+# CRAM configuration
+CFLAGS += -DCRAM_CONFIG=$(CRAM)
+
+# Draw some nifty icons on the frontend
+CFLAGS += -DFRONTEND_ICONS=1
 
 
 # # Include path (use to find zlib.h header file)
@@ -159,125 +177,163 @@ endif
 # endif
 # endif
 
-#
+
 # If LIBZ is left empty, we will build our own in ./zlib
-#LIBZ	=
-#INCZ	=	-Izlib
+# LIBZ =
+# INCZ = -Izlib
 
-# Additional libraries
-LIBS	+=
 # Additional include paths
-INC	+=	$(INCZ)
-
-# Define this, if your OS and compiler has stdint.h
-ifeq ($(wildcard /usr/include/stdint.h),/usr/include/stdint.h)
-CFLAGS	+= -DHAVE_STDINT_H=1
-endif
-
-# Define this to draw some nifty icons on the frontend
-CFLAGS	+= -DFRONTEND_ICONS=1
-
-# Heavy debugging
-#CFLAGS += -DDEBUG_CPU_TIMESLICES=1
-#CFLAGS += -DDEBUG_DISPLAY_TIMING=1
-
-# CRAM configuration
-CFLAGS	+= -DCRAM_CONFIG=$(CRAM)
-
-
-ifeq	($(strip $(SILENT)),1)
-CC_MSG		=	@echo "==> compiling $< ..."
-CC_RUN		=	@$(GCC)
-
-LD_MSG		=	@echo "==> linking $@ ..."
-LD_RUN		=	@$(LD)
-
-AR_MSG		=	@echo "==> archiving $@ ..."
-AR_RUN		=	@$(AR)
-
-RANLIB_MSG	=	@echo "==> indexing $@ ..."
-RANLIB_RUN	=	@$(RANLIB)
-
-LEX_MSG		=	@echo "==> building lexer $< ..."
-LEX_RUN 	=	@$(LEX)
-
-YACC_RUN	=	@$(YACC)
-YACC_MSG	=	@echo "==> building parser $< ..."
-
-MV_RUN		=	@$(MV)
-
-AASM_MSG	=	@echo "==> assembling Alto code $< ..."
-
-else
-
-CC_MSG		=	@echo
-CC_RUN		=	$(GCC)
-
-LD_MSG		=	@echo
-LD_RUN		=	$(LD)
-
-AR_MSG		=	@echo
-AR_RUN		=	$(AR)
-
-RANLIB_MSG	=	@echo
-RANLIB_RUN	=	$(RANLIB)
-
-LEX_MSG		=	@echo
-LEX_RUN		=	$(LEX)
-
-YACC_MSG	=	@echo
-YACC_RUN	=	$(YACC)
-
-MV_RUN		=	$(MV)
-
-AASM_MSG	=	@echo
-endif
+INC += $(INCZ)
+# Additional libraries
+LIBS +=
 
 # Pull in the SDL CFLAGS, -I includes and LIBS
-INC	+= $(shell sdl-config --cflags)
-LIBS	+= $(shell sdl-config --libs)
+INC  += $(shell sdl-config --cflags)
+LIBS += $(shell sdl-config --libs)
+
+
+# # Define this, if your OS and compiler has stdint.h
+# ifeq ($(wildcard /usr/include/stdint.h),/usr/include/stdint.h)
+# CFLAGS	+= -DHAVE_STDINT_H=1
+# endif
+
+
+ifeq ($(SILENT), no)
+	CC_MS      = @echo "==> compiling $< ..."
+	CC_RUN     = @$(GCC)
+
+	LD_MSG     = @echo "==> linking $@ ..."
+	LD_RUN     = @$(LD)
+
+	AR_MSG     = @echo "==> archiving $@ ..."
+	AR_RUN     = @$(AR)
+
+	RANLIB_MSG = @echo "==> indexing $@ ..."
+	RANLIB_RUN = @$(RANLIB)
+
+	LEX_MSG    = @echo "==> building lexer $< ..."
+	LEX_RUN    = @$(LEX)
+
+	YACC_RUN   = @$(YACC)
+	YACC_MSG   = @echo "==> building parser $< ..."
+
+	MV_RUN     = @$(MV)
+
+	AASM_MSG   = @echo "==> assembling Alto code $< ..."
+else
+	CC_MSG     = @echo
+	CC_RUN     = $(GCC)
+
+	LD_MSG     = @echo
+	LD_RUN     = $(LD)
+
+	AR_MSG     = @echo
+	AR_RUN     = $(AR)
+
+	RANLIB_MSG = @echo
+	RANLIB_RUN = $(RANLIB)
+
+	LEX_MSG    = @echo
+	LEX_RUN    = $(LEX)
+
+	YACC_MSG   = @echo
+	YACC_RUN   = $(YACC)
+
+	MV_RUN     = $(MV)
+
+	AASM_MSG   = @echo
+endif
+
+
+# List of source files
+SRCS =	$(BIN)/alto.c \
+		$(BIN)/cpu.c \
+		$(BIN)/curt.c \
+		$(BIN)/debug.c \
+		$(BIN)/dht.c \
+		$(BIN)/disk.c \
+		$(BIN)/display.c \
+		$(BIN)/drive.c \
+		$(BIN)/dvt.c \
+		$(BIN)/dwt.c \
+		$(BIN)/eia.c \
+		$(BIN)/emu.c \
+		$(BIN)/ether.c \
+		$(BIN)/hardware.c \
+		$(BIN)/jkfflut.c \
+		$(BIN)/keyboard.c \
+		$(BIN)/ksec.c \
+		$(BIN)/kwd.c \
+		$(BIN)/md5.c \
+		$(BIN)/memory.c \
+		$(BIN)/mkcpu.c \
+		$(BIN)/mng.c \
+		$(BIN)/mouse.c \
+		$(BIN)/mrt.c \
+		$(BIN)/part.c \
+		$(BIN)/png.c \
+		$(BIN)/printer.c \
+		$(BIN)/ram.c \
+		$(BIN)/salto.c \
+		$(BIN)/timer.c \
+		$(BIN)/unused.c \
+		$(BIN)/zcat.c
+
 
 # The object files for the altogether binary
-OBJS	=	$(OBJ)/salto.o $(OBJ)/zcat.o $(OBJ)/pics.o \
-		$(OBJ)/md5.o $(OBJ)/png.o $(OBJ)/mng.o \
-		$(OBJ)/alto.o $(OBJ)/timer.o $(OBJ)/debug.o \
-		$(OBJ)/hardware.o $(OBJ)/printer.o \
-		$(OBJ)/keyboard.o $(OBJ)/eia.o \
-		$(OBJ)/display.o $(OBJ)/mouse.o \
+OBJS =	$(OBJ)/alto.o \
 		$(OBJ)/cpu.o \
+		$(OBJ)/curt.o \
+		$(OBJ)/debug.o \
+		$(OBJ)/dht.o \
+		$(OBJ)/disk.o \
+		$(OBJ)/display.o \
+		$(OBJ)/drive.o \
+		$(OBJ)/dvt.o \
+		$(OBJ)/dwt.o \
+		$(OBJ)/eia.o \
 		$(OBJ)/emu.o \
-		$(OBJ)/memory.o $(OBJ)/mrt.o \
-		$(OBJ)/dwt.o $(OBJ)/curt.o $(OBJ)/dht.o $(OBJ)/dvt.o \
-		$(OBJ)/disk.o $(OBJ)/drive.o $(OBJ)/ksec.o $(OBJ)/kwd.o \
 		$(OBJ)/ether.o \
+		$(OBJ)/hardware.o \
+		$(OBJ)/keyboard.o \
+		$(OBJ)/ksec.o \
+		$(OBJ)/kwd.o \
+		$(OBJ)/md5.o \
+		$(OBJ)/memory.o \
+		$(OBJ)/mng.o \
+		$(OBJ)/mouse.o \
+		$(OBJ)/mrt.o \
 		$(OBJ)/part.o \
+		$(OBJ)/pics.o \
+		$(OBJ)/png.o \
+		$(OBJ)/printer.o \
 		$(OBJ)/ram.o \
-		$(OBJ)/unused.o
+		$(OBJ)/salto.o \
+		$(OBJ)/timer.o \
+		$(OBJ)/unused.o \
+		$(OBJ)/zcat.o
 
 TARGETS :=
 
 ifneq	($(strip $(LIBZ)),)
-
-# Use a system provided zlib
-LIBS	+= $(LIBZ)
-LIBZOBJ =
-
+	# Use a system provided zlib
+	LIBS += $(LIBZ)
+	LIBZOBJ =
 else
-
-# Use our own static zlib libz.a
-DIRS	+= $(OBJ)/zlib
-LIBS	+= $(OBJ)/$(ZLIB)/libz.a
-TARGETS += $(OBJ)/$(ZLIB)/libz.a
-LIBZOBJ	+= $(OBJ)/$(ZLIB)/adler32.o $(OBJ)/$(ZLIB)/compress.o \
-	$(OBJ)/$(ZLIB)/crc32.o $(OBJ)/$(ZLIB)/deflate.o \
-	$(OBJ)/$(ZLIB)/gzio.o $(OBJ)/$(ZLIB)/inffast.o \
-	$(OBJ)/$(ZLIB)/inflate.o $(OBJ)/$(ZLIB)/infback.o \
-	$(OBJ)/$(ZLIB)/inftrees.o $(OBJ)/$(ZLIB)/trees.o \
-	$(OBJ)/$(ZLIB)/uncompr.o $(OBJ)/$(ZLIB)/zutil.o
-
-LIBZCFLAGS = -O2 -Wall -fno-strict-aliasing \
-	-Wwrite-strings -Wpointer-arith -Wconversion \
-	-Wstrict-prototypes -Wmissing-prototypes
+	# Use our own static zlib libz.a
+	DIRS += $(OBJ)/zlib
+	LIBS += $(OBJ)/$(ZLIB)/libz.a
+	TARGETS += $(OBJ)/$(ZLIB)/libz.a
+	LIBZOBJ += $(OBJ)/$(ZLIB)/adler32.o $(OBJ)/$(ZLIB)/compress.o \
+		$(OBJ)/$(ZLIB)/crc32.o $(OBJ)/$(ZLIB)/deflate.o \
+		$(OBJ)/$(ZLIB)/gzio.o $(OBJ)/$(ZLIB)/inffast.o \
+		$(OBJ)/$(ZLIB)/inflate.o $(OBJ)/$(ZLIB)/infback.o \
+		$(OBJ)/$(ZLIB)/inftrees.o $(OBJ)/$(ZLIB)/trees.o \
+		$(OBJ)/$(ZLIB)/uncompr.o $(OBJ)/$(ZLIB)/zutil.o
+	
+	LIBZCFLAGS = -O2 -Wall -fno-strict-aliasing \
+		-Wwrite-strings -Wpointer-arith -Wconversion \
+		-Wstrict-prototypes -Wmissing-prototypes
 endif
 
 TARGETS += $(BIN)/ppm2c $(BIN)/convbdf $(BIN)/salto \
@@ -288,7 +344,46 @@ all:	dirs $(TARGETS)
 
 $(BIN)/salto:	$(OBJS)
 	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LD) $(LDFLAGS) $(LIBS) -o $@ $^
+
+$(BIN)/ppm2c:	$(OBJ)/ppm2c.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/convbdf:	$(OBJ)/convbdf.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/aasm:	$(OBJ)/aasm.tab.o $(OBJ)/aasmyy.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/adasm:	$(OBJ)/adasm.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/edasm:	$(OBJ)/edasm.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/dumpdsk:	$(OBJ)/dumpdsk.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/aar:	$(OBJ)/aar.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+$(BIN)/aldump:	$(OBJ)/aldump.o $(OBJ)/png.o $(OBJ)/md5.o
+	$(LD_MSG)
+	$(LD) $(LDFLAGS) $(LIBS) -o $@ $^
+
+
+
+$(BIN)/helloworld.bin: asm/helloworld.asm $(BIN)/aasm
+	$(AASM_MSG)
+	$(BIN)/aasm -l -o $@ $<
+
 
 dirs:
 	@-mkdir -p $(DIRS) 2>/dev/null
@@ -310,9 +405,6 @@ $(TEMP)/pics.c: $(BIN)/ppm2c
 	@echo "==> embedding icons in C source $@ ..."
 	@$(BIN)/ppm2c $(wildcard pics/*.ppm) >$@
 
-$(BIN)/ppm2c:	$(OBJ)/ppm2c.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
 
 $(OBJ)/%.o:	$(TEMP)/%.c
 	$(CC_MSG)
@@ -332,13 +424,6 @@ $(OBJ)/$(ZLIB)/libz.a:	$(LIBZOBJ)
 	$(RANLIB_MSG)
 	$(RANLIB_RUN) $@
 
-$(BIN)/convbdf:	$(OBJ)/convbdf.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
-
-$(BIN)/aasm:	$(OBJ)/aasm.tab.o $(OBJ)/aasmyy.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
 
 $(TEMP)/aasmyy.c:	tools/aasm.l
 	$(LEX_MSG)
@@ -350,35 +435,12 @@ $(TEMP)/aasm.tab.c:	tools/aasm.y
 	$(MV_RUN) aasm.output $(TEMP)
 	$(MV_RUN) aasm.tab.? $(TEMP)
 
-$(BIN)/adasm:	$(OBJ)/adasm.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
-
-$(BIN)/edasm:	$(OBJ)/edasm.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
-
-$(BIN)/dumpdsk:	$(OBJ)/dumpdsk.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
-
-$(BIN)/aar:	$(OBJ)/aar.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^
-
-$(BIN)/aldump:	$(OBJ)/aldump.o $(OBJ)/png.o $(OBJ)/md5.o
-	$(LD_MSG)
-	$(LD_RUN) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-$(BIN)/helloworld.bin: asm/helloworld.asm $(BIN)/aasm
-	$(AASM_MSG)
-	$(BIN)/aasm -l -o $@ $<
 
 helloworld:	all
-ifeq	($(strip $(DEBUG)),1)
-	./salto -all $(BIN)/helloworld.bin
+ifeq	($(strip $(DEBUG)), yes)
+	$(BIN)/salto -all $(BIN)/helloworld.bin
 else
-	./salto $(BIN)/helloworld.bin
+	$(BIN)/salto $(BIN)/helloworld.bin
 endif
 
 clean:
@@ -402,6 +464,10 @@ dist:	distclean
 		-o -regex "salto/pics/.*$$" | \
 		grep -v Alto_ROMs | \
 		grep -v CVS`
+
+
+print-% :
+	@echo $* = $($*)
 
 
 include $(wildcard $(OBJ)/*.d)

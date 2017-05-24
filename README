@@ -33,7 +33,7 @@ you installed the flex and yacc lexer and parser generators.
 
 apt-get install flex bison
 
-
+[+++ INSTALL git]
 
 
 1.2) Settings
