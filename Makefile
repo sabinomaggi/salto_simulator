@@ -179,8 +179,8 @@ CFLAGS += -DFRONTEND_ICONS=1
 
 
 # If LIBZ is left empty, we will build our own in ./zlib
-# LIBZ =
-# INCZ = -Izlib
+LIBZ =
+INCZ = -Izlib
 
 # Additional include paths
 INC += $(INCZ)
@@ -246,72 +246,78 @@ endif
 
 
 # List of source files
-SRCS =	$(BIN)/alto.c \
-		$(BIN)/cpu.c \
-		$(BIN)/curt.c \
-		$(BIN)/debug.c \
-		$(BIN)/dht.c \
-		$(BIN)/disk.c \
-		$(BIN)/display.c \
-		$(BIN)/drive.c \
-		$(BIN)/dvt.c \
-		$(BIN)/dwt.c \
-		$(BIN)/eia.c \
-		$(BIN)/emu.c \
-		$(BIN)/ether.c \
-		$(BIN)/hardware.c \
-		$(BIN)/jkfflut.c \
-		$(BIN)/keyboard.c \
-		$(BIN)/ksec.c \
-		$(BIN)/kwd.c \
-		$(BIN)/md5.c \
-		$(BIN)/memory.c \
-		$(BIN)/mkcpu.c \
-		$(BIN)/mng.c \
-		$(BIN)/mouse.c \
-		$(BIN)/mrt.c \
-		$(BIN)/part.c \
-		$(BIN)/png.c \
-		$(BIN)/printer.c \
-		$(BIN)/ram.c \
-		$(BIN)/salto.c \
-		$(BIN)/timer.c \
-		$(BIN)/unused.c \
-		$(BIN)/zcat.c
+SRCS =	$(addprefix $(SRC)/, \
+		alto.c      \
+		cpu.c       \
+		curt.c      \
+		debug.c     \
+		dht.c       \
+		disk.c      \
+		display.c   \
+		drive.c     \
+		dvt.c       \
+		dwt.c       \
+		eia.c       \
+		emu.c       \
+		ether.c     \
+		hardware.c  \
+		jkfflut.c   \
+		keyboard.c  \
+		ksec.c      \
+		kwd.c       \
+		md5.c       \
+		memory.c    \
+		mkcpu.c     \
+		mng.c       \
+		mouse.c     \
+		mrt.c       \
+		part.c      \
+		png.c       \
+		printer.c   \
+		ram.c       \
+		salto.c     \
+		timer.c     \
+		unused.c    \
+		zcat.c      \
+		)
 
 
 # The object files for the altogether binary
-OBJS =	$(OBJ)/alto.o \
-		$(OBJ)/cpu.o \
-		$(OBJ)/curt.o \
-		$(OBJ)/debug.o \
-		$(OBJ)/dht.o \
-		$(OBJ)/disk.o \
-		$(OBJ)/display.o \
-		$(OBJ)/drive.o \
-		$(OBJ)/dvt.o \
-		$(OBJ)/dwt.o \
-		$(OBJ)/eia.o \
-		$(OBJ)/emu.o \
-		$(OBJ)/ether.o \
-		$(OBJ)/hardware.o \
-		$(OBJ)/keyboard.o \
-		$(OBJ)/ksec.o \
-		$(OBJ)/kwd.o \
-		$(OBJ)/md5.o \
-		$(OBJ)/memory.o \
-		$(OBJ)/mng.o \
-		$(OBJ)/mouse.o \
-		$(OBJ)/mrt.o \
-		$(OBJ)/part.o \
-		$(OBJ)/pics.o \
-		$(OBJ)/png.o \
-		$(OBJ)/printer.o \
-		$(OBJ)/ram.o \
-		$(OBJ)/salto.o \
-		$(OBJ)/timer.o \
-		$(OBJ)/unused.o \
-		$(OBJ)/zcat.o
+# OTMP =	$(patsubst $(SRC)%.c,$(OBJ)%.o, $(SRCS))
+# OBJS = $(filter-out %jkfflut.o, $(OTMP))
+OBJS =	$(addprefix $(OBJ)/, \
+		alto.o      \
+		cpu.o       \
+		curt.o      \
+		debug.o     \
+		dht.o       \
+		disk.o      \
+		display.o   \
+		drive.o     \
+		dvt.o       \
+		dwt.o       \
+		eia.o       \
+		emu.o       \
+		ether.o     \
+		hardware.o  \
+		keyboard.o  \
+		ksec.o      \
+		kwd.o       \
+		md5.o       \
+		memory.o    \
+		mng.o       \
+		mouse.o     \
+		mrt.o       \
+		part.o      \
+		pics.o      \
+		png.o       \
+		printer.o   \
+		ram.o       \
+		salto.o     \
+		timer.o     \
+		unused.o    \
+		zcat.o      \
+		)
 
 TARGETS :=
 
@@ -330,17 +336,43 @@ else
 		$(OBJ)/$(ZLIB)/inflate.o $(OBJ)/$(ZLIB)/infback.o \
 		$(OBJ)/$(ZLIB)/inftrees.o $(OBJ)/$(ZLIB)/trees.o \
 		$(OBJ)/$(ZLIB)/uncompr.o $(OBJ)/$(ZLIB)/zutil.o
-	
+
 	LIBZCFLAGS = -O2 -Wall -fno-strict-aliasing \
 		-Wwrite-strings -Wpointer-arith -Wconversion \
 		-Wstrict-prototypes -Wmissing-prototypes
 endif
+
+BINARIES = $(addprefix $(BIN)/, \
+		ppm2c           \
+		convbdf         \
+		salto           \
+		aasm            \
+		adasm           \
+		edasm           \
+		dumpdsk         \
+		aar             \
+		aldump          \
+		helloworld.bin  \
+)
+
 
 TARGETS += $(BIN)/ppm2c $(BIN)/convbdf $(BIN)/salto \
 	$(BIN)/aasm $(BIN)/adasm $(BIN)/edasm \
 	$(BIN)/dumpdsk $(BIN)/aar $(BIN)/aldump $(BIN)/helloworld.bin
 
 all:	dirs $(TARGETS)
+
+
+dirs:
+	@-mkdir -p $(DIRS) 2>/dev/null
+	@echo "*************** AUTO CONFIGURATION ***************"
+	@echo "CC_RUN ....... $(CC_RUN)"
+	@echo "LD_RUN ....... $(LD_RUN)"
+	@echo "AR_RUN ....... $(AR_RUN)"
+	@echo "RANLIB_RUN ... $(RANLIB_RUN)"
+	@echo "LEX_RUN ...... $(LEX_RUN)"
+	@echo "YACC_RUN ..... $(YACC_RUN)"
+	@echo "**************************************************"
 
 $(BIN)/salto:	$(OBJS)
 	$(LD_MSG)
@@ -378,45 +410,31 @@ $(BIN)/aldump:	$(OBJ)/aldump.o $(OBJ)/png.o $(OBJ)/md5.o
 	$(LD_MSG)
 	$(LD) $(LDFLAGS) $(LIBS) -o $@ $^
 
-
-
 $(BIN)/helloworld.bin: asm/helloworld.asm $(BIN)/aasm
 	$(AASM_MSG)
 	$(BIN)/aasm -l -o $@ $<
-
-
-dirs:
-	@-mkdir -p $(DIRS) 2>/dev/null
-	@echo "*************** AUTO CONFIGURATION ***************"
-	@echo "CC_RUN ....... $(CC_RUN)"
-	@echo "LD_RUN ....... $(LD_RUN)"
-	@echo "AR_RUN ....... $(AR_RUN)"
-	@echo "RANLIB_RUN ... $(RANLIB_RUN)"
-	@echo "LEX_RUN ...... $(LEX_RUN)"
-	@echo "YACC_RUN ..... $(YACC_RUN)"
-	@echo "**************************************************"
-
-$(OBJ)/%.o:	tools/%.c
-	$(CC_MSG)
-	$(CC_RUN) $(CFLAGS) -Iinclude -I$(TEMP) -Itools -o $@ -c $<
-
 
 $(TEMP)/pics.c: $(BIN)/ppm2c
 	@echo "==> embedding icons in C source $@ ..."
 	@$(BIN)/ppm2c $(wildcard pics/*.ppm) >$@
 
 
+$(OBJ)/%.o:	 $(SRC)/%.c
+	$(CC_MSG)
+	$(CC_RUN) $(CFLAGS) $(INC) -o $@ -c $<
+
+$(OBJ)/%.o:	$(TOOLS)/%.c
+	$(CC_MSG)
+	$(CC_RUN) $(CFLAGS) -Iinclude -I$(TEMP) -Itools -o $@ -c $<
+
 $(OBJ)/%.o:	$(TEMP)/%.c
 	$(CC_MSG)
 	$(CC_RUN) $(CFLAGS) $(INC) -Itools -o $@ -c $<
 
+
 $(OBJ)/$(ZLIB)/%.o:	 $(SRC)/$(ZLIB)/%.c
 	$(CC_MSG)
 	$(CC_RUN) $(LIBZCFLAGS) $(INC) -o $@ -c $<
-
-$(OBJ)/%.o:	 $(SRC)/%.c
-	$(CC_MSG)
-	$(CC_RUN) $(CFLAGS) $(INC) -o $@ -c $<
 
 $(OBJ)/$(ZLIB)/libz.a:	$(LIBZOBJ)
 	$(AR_MSG)
@@ -425,23 +443,25 @@ $(OBJ)/$(ZLIB)/libz.a:	$(LIBZOBJ)
 	$(RANLIB_RUN) $@
 
 
-$(TEMP)/aasmyy.c:	tools/aasm.l
+$(TEMP)/aasmyy.c:	$(TOOLS)/aasm.l
 	$(LEX_MSG)
 	$(LEX_RUN) -o$@ -i $<
 
-$(TEMP)/aasm.tab.c:	tools/aasm.y
+$(TEMP)/aasm.tab.c:	$(TOOLS)/aasm.y
 	$(YACC_MSG)
 	$(YACC_RUN) $(YFLAGS) -baasm $<
 	$(MV_RUN) aasm.output $(TEMP)
 	$(MV_RUN) aasm.tab.? $(TEMP)
 
 
-helloworld:	all
-ifeq	($(strip $(DEBUG)), yes)
-	$(BIN)/salto -all $(BIN)/helloworld.bin
-else
-	$(BIN)/salto $(BIN)/helloworld.bin
-endif
+
+# helloworld:	all
+# ifeq	($(DEBUG), yes)
+# 	$(BIN)/salto -all $(BIN)/helloworld.bin
+# else
+# 	$(BIN)/salto $(BIN)/helloworld.bin
+# endif
+
 
 clean:
 	rm -rf salto *.core $(TEMP) $(OBJ) $(BIN)
@@ -449,25 +469,25 @@ clean:
 distclean:	clean
 	rm -rf helloworld.bin alto.mng alto*.png alto.dump log *.bck */*.bck
 
-dist:	distclean
-	cd .. && tar -czf $(PROJECT)-$(VERSION).tar.gz \
-	`find salto \
-		-regex ".*\.[chly]$$" \
-		-o -regex ".*\.asm$$" \
-		-o -regex ".*\.txt$$" \
-		-o -regex ".*\.mu$$" \
-		-o -regex "salto/README$$" \
-		-o -regex "salto/COPYING$$" \
-		-o -regex "salto/Makefile$$" \
-		-o -regex "salto/Doxyfile$$" \
-		-o -regex "salto/roms/.*$$" \
-		-o -regex "salto/pics/.*$$" | \
-		grep -v Alto_ROMs | \
-		grep -v CVS`
+# dist:	distclean
+# 	cd .. && tar -czf $(PROJECT)-$(VERSION).tar.gz \
+# 	`find salto \
+# 		-regex ".*\.[chly]$$" \
+# 		-o -regex ".*\.asm$$" \
+# 		-o -regex ".*\.txt$$" \
+# 		-o -regex ".*\.mu$$" \
+# 		-o -regex "salto/README$$" \
+# 		-o -regex "salto/COPYING$$" \
+# 		-o -regex "salto/Makefile$$" \
+# 		-o -regex "salto/Doxyfile$$" \
+# 		-o -regex "salto/roms/.*$$" \
+# 		-o -regex "salto/pics/.*$$" | \
+# 		grep -v Alto_ROMs | \
+# 		grep -v CVS`
 
 
 print-% :
 	@echo $* = $($*)
 
 
-include $(wildcard $(OBJ)/*.d)
+# include $(wildcard $(OBJ)/*.d)
